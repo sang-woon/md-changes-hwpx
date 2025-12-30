@@ -1,0 +1,72 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hwpx-converter"
+version = "1.0.0"
+description = "Markdown to HWPX converter for Korean public agency document styles"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+authors = [
+    {name = "경기도의회 AI입법혁신팀", email = "ai-innovation@ggc.go.kr"}
+]
+keywords = ["hwpx", "markdown", "converter", "pandoc", "korean", "hangul"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "pypandoc>=1.11",
+    "pypandoc-hwpx>=0.1.0",
+    "fastapi>=0.100.0",
+    "uvicorn[standard]>=0.23.0",
+    "pydantic>=2.0.0",
+    "python-multipart>=0.0.6",
+    "aiofiles>=23.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "httpx>=0.24.0",
+    "black>=23.0.0",
+    "ruff>=0.0.280",
+]
+
+[project.scripts]
+hwpx-convert = "hwpx_converter.cli:main"
+hwpx-server = "hwpx_converter.api:run_server"
+
+[project.urls]
+Homepage = "https://github.com/ggc-ai/hwpx-converter"
+Documentation = "https://github.com/ggc-ai/hwpx-converter#readme"
+Issues = "https://github.com/ggc-ai/hwpx-converter/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+hwpx_converter = ["templates/*.hwpx"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.black]
+line-length = 100
+target-version = ['py310', 'py311', 'py312']
+
+[tool.ruff]
+line-length = 100
+select = ["E", "F", "W", "I", "N", "B", "Q"]
+ignore = ["E501"]

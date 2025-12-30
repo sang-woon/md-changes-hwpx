@@ -1,0 +1,65 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Test outputs
+test_*.hwpx
+test_*.md
+*.tmp
+
+# Generated HWPX files (keep templates)
+/*.hwpx
+/sample_*.hwpx
+2026_*.hwpx
+
+# Large installers
+*.msi
+*.exe
+
+# XML test files
+*_test_output*.xml
+extracted_text.txt
+
+# Temp files
+*.log
+.DS_Store
+Thumbs.db
+
+# UV
+.uv/
+
+# Local config
+.env
+.env.local
+
+# Playwright
+.playwright-mcp/
