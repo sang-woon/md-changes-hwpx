@@ -63,3 +63,5 @@ Thumbs.db
 
 # Playwright
 .playwright-mcp/
+
+.vercel
