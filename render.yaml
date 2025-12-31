@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: hwpx-converter
+    runtime: docker
+    plan: free
+    healthCheckPath: /healthz
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11"
