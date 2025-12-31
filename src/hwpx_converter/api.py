@@ -10,6 +10,7 @@ TRD 2.5 API 설계에 따른 엔드포인트 구현:
 """
 
 import os
+import json
 import logging
 from pathlib import Path
 from datetime import datetime
@@ -17,7 +18,8 @@ from typing import Optional, List
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Query, Request
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -110,6 +112,40 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# 정적 파일 서빙 (웹 UI)
+STATIC_DIR = Path(__file__).parent / "static"
+if STATIC_DIR.exists():
+    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
+
+# ============================================================================
+# ChatGPT 프롬프트 템플릿 (PRD FR-01, FR-02)
+# ============================================================================
+
+CHATGPT_PROMPT_TEMPLATE = """당신은 공공기관 보고서 초안 작성 전문가입니다.
+
+[필수 출력 규칙]
+1. 응답은 반드시 Markdown 문법으로만 작성합니다.
+2. 응답 전체를 ```markdown 코드블록 안에 넣어 출력합니다.
+3. 설명 문장, 인사말, 부연 설명은 절대 포함하지 않습니다.
+4. 서식에 대한 설명(예: "아래는 보고서입니다")을 작성하지 않습니다.
+
+[Markdown 구조 규칙]
+- 대제목: # (1개)
+- 중제목: ## (2개)
+- 1단계 항목: - (대시)
+- 2단계 항목: 4칸 들여쓰기 후 - (대시)
+- 주석/참고: > (인용)
+- 강조: **굵게**
+
+[작성 요청]
+주제: {topic}
+
+위 주제에 대해 공공기관 보고서 형식의 Markdown을 작성해 주세요.
+- 개조식(글머리 기호) 형태로 작성
+- 간결하고 명확한 문장
+- 구체적인 수치나 일정 포함"""
+
 
 # ============================================================================
 # 예외 핸들러
@@ -135,9 +171,28 @@ async def hwpx_error_handler(request: Request, exc: HwpxConverterError):
 # ============================================================================
 
 
-@app.get("/", tags=["상태"])
+@app.get("/", response_class=HTMLResponse, tags=["상태"])
 async def root():
-    """서비스 상태 확인"""
+    """웹 UI 제공"""
+    html_path = STATIC_DIR / "index.html"
+    if html_path.exists():
+        return HTMLResponse(content=html_path.read_text(encoding="utf-8"))
+    return HTMLResponse(
+        content="""
+        <html>
+        <head><title>HWPX 변환 서비스</title></head>
+        <body>
+            <h1>공공기관 HWPX 변환 서비스</h1>
+            <p>API 문서: <a href="/docs">/docs</a></p>
+        </body>
+        </html>
+        """
+    )
+
+
+@app.get("/api", tags=["상태"])
+async def api_status():
+    """API 상태 확인"""
     return {
         "service": "공공기관 HWPX 변환 서비스",
         "version": "1.0.0",
@@ -187,6 +242,7 @@ async def create_conversion(
     template_id: str = Form(default="default", description="템플릿 ID"),
     filename: str = Form(default="output", description="출력 파일명"),
     preprocess: bool = Form(default=True, description="마크다운 전처리 여부"),
+    style_settings: Optional[str] = Form(default=None, description="스타일 설정 (JSON)"),
 ):
     """
     마크다운을 HWPX로 변환 요청
@@ -236,10 +292,21 @@ async def create_conversion(
         # 출력 경로
         output_path = storage.get_output_path(job.conversion_id, filename)
 
+        # 스타일 설정 파싱
+        parsed_style_settings = None
+        if style_settings:
+            try:
+                parsed_style_settings = json.loads(style_settings)
+                logger.info(f"Style settings received: {parsed_style_settings}")
+            except json.JSONDecodeError:
+                logger.warning("Invalid style_settings JSON, using defaults")
+        else:
+            logger.info("No style_settings received, using defaults")
+
         # 변환 실행
         converter = HwpxConverter()
         _, processing_time, output_size = converter.convert(
-            str(input_path), str(output_path), preprocess=preprocess
+            str(input_path), str(output_path), preprocess=preprocess, style_settings=parsed_style_settings
         )
 
         # 성공 처리
@@ -485,6 +552,64 @@ async def get_markdown_guide():
 
 
 # ============================================================================
+# ChatGPT 프롬프트 API (PRD FR-01, FR-02)
+# ============================================================================
+
+
+class PromptRequest(BaseModel):
+    """프롬프트 생성 요청"""
+
+    topic: str = Field(..., description="문서 주제", min_length=1)
+
+
+class PromptResponse(BaseModel):
+    """프롬프트 응답"""
+
+    prompt: str = Field(..., description="ChatGPT용 프롬프트")
+    topic: str = Field(..., description="입력된 주제")
+    usage_guide: str = Field(..., description="사용 가이드")
+
+
+@app.get(
+    "/v1/prompt",
+    response_model=PromptResponse,
+    tags=["프롬프트"],
+    summary="ChatGPT 프롬프트 조회",
+)
+async def get_prompt_template(topic: str = Query(default="", description="문서 주제")):
+    """
+    ChatGPT용 시스템 프롬프트 조회 (PRD FR-01)
+
+    AI가 Markdown 코드블록 형태로만 응답하도록 하는 프롬프트를 반환합니다.
+    """
+    topic_text = topic if topic else "(사용자가 입력할 주제)"
+    return PromptResponse(
+        prompt=CHATGPT_PROMPT_TEMPLATE.format(topic=topic_text),
+        topic=topic_text,
+        usage_guide="이 프롬프트를 ChatGPT에 복사하여 사용하세요. AI 응답을 그대로 복사하여 웹서비스에 붙여넣으면 됩니다.",
+    )
+
+
+@app.post(
+    "/v1/prompt",
+    response_model=PromptResponse,
+    tags=["프롬프트"],
+    summary="ChatGPT 프롬프트 생성",
+)
+async def create_prompt(request: PromptRequest):
+    """
+    주제를 입력받아 ChatGPT용 프롬프트 생성 (PRD FR-01)
+
+    사용자가 복사하여 ChatGPT에 바로 사용할 수 있는 프롬프트를 생성합니다.
+    """
+    return PromptResponse(
+        prompt=CHATGPT_PROMPT_TEMPLATE.format(topic=request.topic),
+        topic=request.topic,
+        usage_guide="이 프롬프트를 ChatGPT에 복사하여 사용하세요. AI 응답을 그대로 복사하여 웹서비스에 붙여넣으면 됩니다.",
+    )
+
+
+# ============================================================================
 # 서버 실행
 # ============================================================================
 
@@ -494,14 +619,15 @@ def run_server(host: str = "0.0.0.0", port: int = 8000, reload: bool = False):
     import uvicorn
 
     print(
-        """
+        f"""
     ╔══════════════════════════════════════════════════════════════╗
     ║       공공기관 HWPX 변환 서비스 (API Server v1.0)             ║
     ║                                                              ║
     ║  마크다운 → 공공기관 스타일 HWPX 변환                        ║
     ║  Ⅰ. → ① → □ → ㅇ                                           ║
     ║                                                              ║
-    ║  API 문서: http://localhost:8000/docs                        ║
+    ║  웹 UI:    http://localhost:{port}/                          ║
+    ║  API 문서: http://localhost:{port}/docs                      ║
     ╚══════════════════════════════════════════════════════════════╝
     """
     )

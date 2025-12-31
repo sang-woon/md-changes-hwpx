@@ -1,0 +1,1604 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>공공기관 HWPX 변환 서비스</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Malgun Gothic', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f5f7fa;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%);
+            color: white;
+            padding: 0.8rem 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .header p {
+            font-size: 0.8rem;
+            opacity: 0.9;
+            margin-top: 0.2rem;
+        }
+
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        /* 3-Column Layout */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 320px 1fr;
+            gap: 1rem;
+            height: calc(100vh - 100px);
+        }
+
+        @media (max-width: 1200px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+        }
+
+        .panel {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            background: #edf2f7;
+            padding: 0.6rem 1rem;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .panel-title {
+            font-weight: 600;
+            color: #2d3748;
+            font-size: 0.9rem;
+        }
+
+        .panel-subtitle {
+            font-size: 0.75rem;
+            color: #718096;
+            margin-left: 0.5rem;
+        }
+
+        .panel-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .panel-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+
+        .btn {
+            padding: 0.4rem 0.8rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #3182ce;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2c5282;
+        }
+
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+
+        .btn-secondary:hover {
+            background: #cbd5e0;
+        }
+
+        .btn-success {
+            background: #38a169;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #2f855a;
+        }
+
+        .btn-lg {
+            padding: 0.6rem 1.2rem;
+            font-size: 0.9rem;
+        }
+
+        /* 왼쪽 패널: ChatGPT 결과 입력 */
+        .input-panel textarea {
+            width: 100%;
+            height: 100%;
+            border: none;
+            resize: none;
+            font-family: 'D2Coding', 'Consolas', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            padding: 1rem;
+            outline: none;
+        }
+
+        .input-panel textarea::placeholder {
+            color: #a0aec0;
+        }
+
+        .input-panel textarea:focus {
+            box-shadow: inset 0 0 0 2px rgba(66, 153, 225, 0.3);
+        }
+
+        /* 가운데 패널: 마크다운 분석 & 스타일 설정 */
+        .analysis-panel .panel-body {
+            padding: 0;
+        }
+
+        .analysis-section {
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .analysis-section:last-child {
+            border-bottom: none;
+        }
+
+        .analysis-header {
+            padding: 0.6rem 1rem;
+            background: #f7fafc;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .analysis-header:hover {
+            background: #edf2f7;
+        }
+
+        .analysis-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .analysis-count {
+            background: #3182ce;
+            color: white;
+            font-size: 0.7rem;
+            padding: 0.15rem 0.5rem;
+            border-radius: 10px;
+            min-width: 20px;
+            text-align: center;
+        }
+
+        .analysis-count.zero {
+            background: #cbd5e0;
+            color: #4a5568;
+        }
+
+        .analysis-content {
+            padding: 0.8rem 1rem;
+            background: white;
+        }
+
+        .style-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .style-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .style-label {
+            font-size: 0.75rem;
+            color: #4a5568;
+            width: 50px;
+            flex-shrink: 0;
+        }
+
+        .style-input {
+            flex: 1;
+            padding: 0.3rem 0.5rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            background: white;
+        }
+
+        .style-input:focus {
+            outline: none;
+            border-color: #3182ce;
+        }
+
+        .markdown-example {
+            font-family: 'D2Coding', 'Consolas', monospace;
+            font-size: 0.75rem;
+            color: #718096;
+            background: #f7fafc;
+            padding: 0.3rem 0.5rem;
+            border-radius: 4px;
+            margin-bottom: 0.5rem;
+        }
+
+        .arrow-indicator {
+            color: #3182ce;
+            font-weight: bold;
+            margin: 0 0.3rem;
+        }
+
+        .hwpx-preview {
+            font-size: 0.8rem;
+            color: #2d3748;
+            background: #e6fffa;
+            padding: 0.3rem 0.5rem;
+            border-radius: 4px;
+            border: 1px solid #81e6d9;
+        }
+
+        /* 오른쪽 패널: 미리보기 */
+        .preview-panel .panel-body {
+            padding: 1.5rem;
+            font-family: 'Malgun Gothic', sans-serif;
+            line-height: 1.8;
+        }
+
+        .preview-title {
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .preview-title.h1 {
+            font-size: 18pt;
+        }
+
+        .preview-title.h2 {
+            font-size: 15pt;
+            margin-top: 1rem;
+        }
+
+        .preview-item {
+            margin-bottom: 0.3rem;
+        }
+
+        .preview-item.level1 {
+            font-size: 13pt;
+        }
+
+        .preview-item.level2 {
+            font-size: 12pt;
+        }
+
+        .preview-note {
+            font-size: 10pt;
+            color: #666;
+            margin-top: 0.5rem;
+        }
+
+        .preview-empty {
+            color: #a0aec0;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        /* 버튼 영역 */
+        .convert-section {
+            padding: 1rem;
+            background: #f7fafc;
+            border-top: 1px solid #e2e8f0;
+            text-align: center;
+        }
+
+        /* 상태바 */
+        .status-bar {
+            padding: 0.4rem 1rem;
+            background: #f7fafc;
+            border-top: 1px solid #e2e8f0;
+            font-size: 0.75rem;
+            color: #718096;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: #2d3748;
+            color: white;
+            padding: 0.75rem 1.25rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 1001;
+            font-size: 0.875rem;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success { background: #38a169; }
+        .toast.error { background: #e53e3e; }
+
+        .loading {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* 분석 결과 없음 */
+        .no-analysis {
+            text-align: center;
+            color: #a0aec0;
+            padding: 2rem 1rem;
+            font-size: 0.85rem;
+        }
+
+        /* 분석 안내 */
+        .analysis-info {
+            padding: 0.5rem 1rem;
+            background: #ebf8ff;
+            color: #2b6cb0;
+            font-size: 0.75rem;
+            border-bottom: 1px solid #bee3f8;
+        }
+
+        /* 샘플 텍스트 */
+        .sample-text {
+            font-size: 0.75rem;
+            color: #718096;
+            background: #f7fafc;
+            padding: 0.4rem 0.6rem;
+            border-radius: 4px;
+            margin-bottom: 0.5rem;
+            font-style: italic;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* 매핑 선택 강조 */
+        .mapping-select {
+            background: #ebf8ff !important;
+            border-color: #90cdf4 !important;
+            font-weight: 500;
+        }
+
+        /* 설명 텍스트 */
+        .help-text {
+            font-size: 0.7rem;
+            color: #a0aec0;
+            margin-top: 0.3rem;
+        }
+
+        /* 테이블 미리보기 */
+        .preview-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0.8rem 0;
+            font-size: 11pt;
+        }
+
+        .preview-table th,
+        .preview-table td {
+            border: 1px solid #4a5568;
+            padding: 0.4rem 0.6rem;
+            text-align: left;
+        }
+
+        .preview-table th {
+            background: #edf2f7;
+            font-weight: bold;
+        }
+
+        .preview-table td {
+            background: white;
+        }
+
+        /* 프롬프트 버튼 */
+        .prompt-btn {
+            background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+            color: white;
+        }
+
+        .prompt-btn:hover {
+            background: linear-gradient(135deg, #2f855a 0%, #276749 100%);
+        }
+
+        /* 모달 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 700px;
+            max-height: 90vh;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+            color: white;
+            padding: 1rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            font-size: 1.1rem;
+            margin: 0;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+            overflow-y: auto;
+            max-height: calc(90vh - 150px);
+        }
+
+        .topic-input-group {
+            margin-bottom: 1rem;
+        }
+
+        .topic-input-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #2d3748;
+        }
+
+        .topic-input-group input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        .topic-input-group input:focus {
+            outline: none;
+            border-color: #38a169;
+        }
+
+        .prompt-box {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 1rem;
+            font-family: 'D2Coding', 'Consolas', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .modal-footer {
+            padding: 1rem 1.5rem;
+            background: #f7fafc;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>공공기관 HWPX 변환 서비스</h1>
+        <p>ChatGPT 결과 붙여넣기 → 스타일 설정 → 미리보기 → HWPX 변환</p>
+    </div>
+
+    <div class="container">
+        <div class="main-layout">
+            <!-- 왼쪽: ChatGPT 결과 입력 -->
+            <div class="panel input-panel">
+                <div class="panel-header">
+                    <div>
+                        <span class="panel-title">ChatGPT 결과 붙여넣기</span>
+                        <span class="panel-subtitle">마크다운 형식</span>
+                    </div>
+                    <div class="panel-actions">
+                        <button class="btn prompt-btn" onclick="showPromptModal()">프롬프트 생성</button>
+                        <button class="btn btn-secondary" onclick="clearInput()">지우기</button>
+                    </div>
+                </div>
+                <div class="panel-body" style="padding: 0;">
+                    <textarea id="markdown-input" placeholder="ChatGPT에서 복사한 마크다운을 여기에 붙여넣으세요...
+
+예시:
+# 대제목
+## 중제목
+- 1단계 항목
+  - 2단계 항목
+> 주석/참고사항"></textarea>
+                </div>
+                <div class="status-bar">
+                    <span id="char-count">0자</span>
+                    <span id="line-count">0줄</span>
+                </div>
+            </div>
+
+            <!-- 가운데: 마크다운 분석 & 스타일 설정 -->
+            <div class="panel analysis-panel">
+                <div class="panel-header">
+                    <span class="panel-title">마크다운 분석 & 스타일</span>
+                    <button class="btn btn-secondary" onclick="resetStyles()">초기화</button>
+                </div>
+                <div class="panel-body" id="analysis-container">
+                    <div class="no-analysis">
+                        왼쪽에 마크다운을 입력하면<br>자동으로 분석됩니다
+                    </div>
+                </div>
+                <div class="convert-section">
+                    <button class="btn btn-success btn-lg" onclick="convertToHwpx()" id="convert-btn" style="width: 100%;">
+                        HWPX 변환 및 다운로드
+                    </button>
+                </div>
+            </div>
+
+            <!-- 오른쪽: 미리보기 -->
+            <div class="panel preview-panel">
+                <div class="panel-header">
+                    <span class="panel-title">HWPX 미리보기</span>
+                    <span class="panel-subtitle">변환 결과 예시</span>
+                </div>
+                <div class="panel-body" id="preview-container">
+                    <div class="preview-empty">
+                        마크다운을 입력하면<br>변환 결과가 미리보기됩니다
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <!-- ChatGPT 프롬프트 모달 -->
+    <div class="modal-overlay" id="prompt-modal" onclick="closePromptModal(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2>ChatGPT 프롬프트 생성</h2>
+                <button class="modal-close" onclick="closePromptModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="topic-input-group">
+                    <label for="topic-input">문서 주제를 입력하세요</label>
+                    <input type="text" id="topic-input" placeholder="예: 2025년 디지털 정부혁신 추진계획" oninput="updatePrompt()">
+                </div>
+                <div class="prompt-box" id="prompt-content"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closePromptModal()">닫기</button>
+                <button class="btn btn-success" onclick="copyPrompt()">프롬프트 복사</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========================================
+        // 스타일 설정 기본값
+        // ========================================
+        const defaultStyles = {
+            title: { bullet: 'roman', size: 18, bold: true, indent: 0, font: '경기천년제목 Light' },
+            subtitle: { bullet: 'circled', size: 15, bold: true, indent: 0, font: '경기천년제목 Light' },
+            level1: { bullet: '□', size: 14, bold: false, indent: 1, font: '경기천년바탕 Regular' },
+            level2: { bullet: 'ㅇ', size: 12, bold: false, indent: 3, font: '경기천년바탕 Regular' },
+            note: { bullet: '*', size: 12, bold: false, indent: 0, font: '경기천년바탕 Regular' }
+        };
+
+        // 폰트 크기 옵션 (공통)
+        const fontSizeOptions = [12, 14, 15, 18, 20];
+
+        // 글꼴 옵션 (경기도의회 사용 글꼴)
+        const fontOptions = [
+            { value: 'HY헤드라인M', label: 'HY헤드라인M' },
+            { value: '경기천년바탕 Regular', label: '경기천년바탕 Regular' },
+            { value: '경기천년제목 Light', label: '경기천년제목 Light' },
+            { value: '중고딕', label: '중고딕' },
+            { value: '함초롬바탕', label: '함초롬바탕' },
+            { value: '휴먼명조', label: '휴먼명조' }
+        ];
+
+        let currentStyles = JSON.parse(JSON.stringify(defaultStyles));
+        let currentAnalysis = null; // 현재 분석 결과 저장
+
+        // ========================================
+        // 마크다운 분석 (동적)
+        // ========================================
+        function analyzeMarkdown(markdown) {
+            const lines = markdown.split('\n');
+            const analysis = {};
+
+            // 감지할 마크다운 패턴들
+            const patterns = {
+                'h1': { regex: /^# (?!#)/, prefix: '# ', label: '# (헤딩 1)' },
+                'h2': { regex: /^## (?!#)/, prefix: '## ', label: '## (헤딩 2)' },
+                'h3': { regex: /^### (?!#)/, prefix: '### ', label: '### (헤딩 3)' },
+                'h4': { regex: /^#### (?!#)/, prefix: '#### ', label: '#### (헤딩 4)' },
+                'h5': { regex: /^##### (?!#)/, prefix: '##### ', label: '##### (헤딩 5)' },
+                'h6': { regex: /^###### /, prefix: '###### ', label: '###### (헤딩 6)' },
+                'quote': { regex: /^> /, prefix: '> ', label: '> (인용문)' },
+                'table': { regex: /^\|.*\|/, prefix: '|', label: '| 표 (테이블)' }
+            };
+
+            // 리스트 들여쓰기 레벨 감지
+            const listLevels = {};
+
+            lines.forEach((line, index) => {
+                const trimmed = line.trim();
+                if (!trimmed) return;
+
+                // 헤딩, 인용문, 표 감지
+                for (const [key, pattern] of Object.entries(patterns)) {
+                    if (pattern.regex.test(trimmed)) {
+                        if (!analysis[key]) {
+                            analysis[key] = {
+                                items: [],
+                                label: pattern.label,
+                                prefix: pattern.prefix,
+                                mappedTo: getDefaultMapping(key)
+                            };
+                        }
+                        const content = trimmed.replace(pattern.regex, '').replace(/^\||\|$/g, '');
+                        analysis[key].items.push({ line: index + 1, content: content.trim() });
+                        return;
+                    }
+                }
+
+                // 리스트 감지 (들여쓰기 레벨별로 분류)
+                const listMatch = line.match(/^(\s*)([-*+])\s+(.*)$/);
+                if (listMatch) {
+                    const indent = listMatch[1].length;
+                    const bullet = listMatch[2];
+                    const content = listMatch[3];
+
+                    // 들여쓰기 레벨 계산 (0, 2, 4... 기준)
+                    const level = Math.floor(indent / 2);
+                    const key = `list_${level}`;
+
+                    if (!analysis[key]) {
+                        const indentLabel = level === 0 ? '- (리스트)' : `${'  '.repeat(level)}- (들여쓰기 ${level*2}칸)`;
+                        analysis[key] = {
+                            items: [],
+                            label: indentLabel,
+                            prefix: '  '.repeat(level) + '- ',
+                            indent: level,
+                            mappedTo: getDefaultListMapping(level)
+                        };
+                    }
+                    analysis[key].items.push({ line: index + 1, content });
+                }
+            });
+
+            return analysis;
+        }
+
+        // 기본 매핑 (헤딩용)
+        function getDefaultMapping(key) {
+            const defaults = {
+                'h1': 'title',
+                'h2': 'subtitle',
+                'h3': 'subtitle',
+                'h4': 'level1',
+                'h5': 'level2',
+                'h6': 'level2',
+                'quote': 'note',
+                'table': 'table'
+            };
+            return defaults[key] || 'none';
+        }
+
+        // 기본 매핑 (리스트용)
+        function getDefaultListMapping(level) {
+            if (level === 0) return 'level1';
+            if (level === 1) return 'level2';
+            return 'level2';
+        }
+
+        // HWPX 스타일 타입 정의
+        const hwpxStyleTypes = [
+            { value: 'title', label: '대제목 (Ⅰ. Ⅱ. Ⅲ.)' },
+            { value: 'subtitle', label: '중제목 (① ② ③)' },
+            { value: 'level1', label: '1단계 항목 (□)' },
+            { value: 'level2', label: '2단계 항목 (ㅇ)' },
+            { value: 'note', label: '주석/참고 (*)' },
+            { value: 'table', label: '표 (테이블)' },
+            { value: 'none', label: '변환 안함 (그대로)' }
+        ];
+
+        // ========================================
+        // 헬퍼 함수들
+        // ========================================
+        function truncateText(text, maxLength) {
+            if (!text) return '내용';
+            // **굵게** 마크다운 제거
+            text = text.replace(/\*\*(.*?)\*\*/g, '$1');
+            if (text.length <= maxLength) return text;
+            return text.substring(0, maxLength) + '...';
+        }
+
+        function getMdExample(key, content) {
+            switch(key) {
+                case 'h1': return `# ${content}`;
+                case 'h2': return `## ${content}`;
+                case 'level1': return `- ${content}`;
+                case 'level2': return `  - ${content}`;
+                case 'note': return `> ${content}`;
+                default: return content;
+            }
+        }
+
+        function getHwpxExample(key, content) {
+            const style = currentStyles[key];
+            let bullet = '';
+            let indent = '';
+
+            if (key === 'h1') {
+                if (style.bullet === 'roman') bullet = 'Ⅰ. ';
+                else if (style.bullet === 'number') bullet = '1. ';
+            } else if (key === 'h2') {
+                if (style.bullet === 'circled') bullet = '① ';
+                else if (style.bullet === 'number') bullet = '1) ';
+                else if (style.bullet === 'korean') bullet = '가. ';
+            } else if (key === 'level1') {
+                indent = '␣'.repeat(style.indent || 0);
+                bullet = style.bullet + ' ';
+            } else if (key === 'level2') {
+                indent = '␣'.repeat(style.indent || 0);
+                bullet = style.bullet + ' ';
+            } else if (key === 'note') {
+                if (style.bullet !== 'none') bullet = style.bullet + ' ';
+            }
+
+            return indent + bullet + content;
+        }
+
+        // ========================================
+        // 기본 스타일 설정 섹션 렌더링
+        // ========================================
+        function renderDefaultStylesSection() {
+            const styleTypes = [
+                { key: 'title', label: '대제목', example: 'Ⅰ. Ⅱ. Ⅲ.' },
+                { key: 'subtitle', label: '중제목', example: '① ② ③' },
+                { key: 'level1', label: '1단계 항목', example: '□' },
+                { key: 'level2', label: '2단계 항목', example: 'ㅇ' },
+                { key: 'note', label: '주석/참고', example: '*' }
+            ];
+
+            let html = `
+                <div class="analysis-section">
+                    <div class="analysis-header" onclick="toggleSection('default-styles')">
+                        <span class="analysis-title">기본 스타일 설정</span>
+                        <span style="font-size: 0.7rem; color: #718096;">▼</span>
+                    </div>
+                    <div class="analysis-content" id="section-default-styles">
+            `;
+
+            styleTypes.forEach(type => {
+                const style = currentStyles[type.key];
+                const bulletOptions = getBulletOptions(type.key);
+
+                html += `
+                    <div style="margin-bottom: 0.8rem; padding-bottom: 0.8rem; border-bottom: 1px solid #e2e8f0;">
+                        <div style="font-weight: 600; font-size: 0.8rem; color: #2d3748; margin-bottom: 0.4rem;">
+                            ${type.label} <span style="color: #718096; font-weight: normal;">(${type.example})</span>
+                        </div>
+                        <div class="style-row">
+                            <span class="style-label">글머리</span>
+                            <select class="style-input" onchange="updateDefaultStyle('${type.key}', 'bullet', this.value)">
+                                ${bulletOptions.map(opt =>
+                                    `<option value="${opt.value}" ${style.bullet === opt.value ? 'selected' : ''}>${opt.label}</option>`
+                                ).join('')}
+                            </select>
+                        </div>
+                        <div class="style-row">
+                            <span class="style-label">크기</span>
+                            <select class="style-input" onchange="updateDefaultStyle('${type.key}', 'size', parseInt(this.value))">
+                                ${fontSizeOptions.map(size =>
+                                    `<option value="${size}" ${style.size === size ? 'selected' : ''}>${size}pt</option>`
+                                ).join('')}
+                            </select>
+                        </div>
+                `;
+
+                // 굵기 (title, subtitle, level1)
+                if (['title', 'subtitle', 'level1'].includes(type.key)) {
+                    html += `
+                        <div class="style-row">
+                            <span class="style-label">굵기</span>
+                            <select class="style-input" onchange="updateDefaultStyle('${type.key}', 'bold', this.value === 'true')">
+                                <option value="true" ${style.bold ? 'selected' : ''}>굵게</option>
+                                <option value="false" ${!style.bold ? 'selected' : ''}>보통</option>
+                            </select>
+                        </div>
+                    `;
+                }
+
+                // 들여쓰기 (level1, level2)
+                if (['level1', 'level2'].includes(type.key)) {
+                    html += `
+                        <div class="style-row">
+                            <span class="style-label">들여쓰기</span>
+                            <select class="style-input" onchange="updateDefaultStyle('${type.key}', 'indent', parseInt(this.value))">
+                                <option value="0" ${style.indent === 0 ? 'selected' : ''}>없음</option>
+                                <option value="1" ${style.indent === 1 ? 'selected' : ''}>1칸</option>
+                                <option value="2" ${style.indent === 2 ? 'selected' : ''}>2칸</option>
+                                <option value="3" ${style.indent === 3 ? 'selected' : ''}>3칸</option>
+                                <option value="4" ${style.indent === 4 ? 'selected' : ''}>4칸</option>
+                            </select>
+                        </div>
+                    `;
+                }
+
+                // 글꼴
+                html += `
+                        <div class="style-row">
+                            <span class="style-label">글꼴</span>
+                            <select class="style-input" onchange="updateDefaultStyle('${type.key}', 'font', this.value)">
+                                ${fontOptions.map(opt =>
+                                    `<option value="${opt.value}" ${style.font === opt.value ? 'selected' : ''}>${opt.label}</option>`
+                                ).join('')}
+                            </select>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `
+                    </div>
+                </div>
+            `;
+
+            return html;
+        }
+
+        // 기본 스타일 업데이트
+        function updateDefaultStyle(styleKey, property, value) {
+            if (currentStyles[styleKey]) {
+                currentStyles[styleKey][property] = value;
+                updatePreview();
+            }
+        }
+
+        // ========================================
+        // 분석 UI 렌더링 (동적)
+        // ========================================
+        function renderAnalysis(analysis) {
+            const container = document.getElementById('analysis-container');
+            currentAnalysis = analysis; // 전역에 저장
+
+            const keys = Object.keys(analysis);
+
+            // 기본 스타일 설정 섹션 (항상 표시)
+            let html = renderDefaultStylesSection();
+
+            if (keys.length === 0) {
+                html += '<div class="no-analysis" style="padding: 1rem;">마크다운을 입력하면 감지된 요소가 여기에 표시됩니다</div>';
+                container.innerHTML = html;
+                return;
+            }
+
+            // 정렬: 헤딩 > 리스트 > 인용 > 표 순서
+            const sortOrder = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'list_0', 'list_1', 'list_2', 'list_3', 'quote', 'table'];
+            keys.sort((a, b) => {
+                const aIdx = sortOrder.indexOf(a) !== -1 ? sortOrder.indexOf(a) : 100;
+                const bIdx = sortOrder.indexOf(b) !== -1 ? sortOrder.indexOf(b) : 100;
+                return aIdx - bIdx;
+            });
+
+            html += '<div class="analysis-info">감지된 마크다운 요소</div>';
+
+            keys.forEach(key => {
+                const data = analysis[key];
+                const count = data.items.length;
+                if (count === 0) return;
+
+                const firstItem = data.items[0];
+                const sampleContent = truncateText(firstItem.content, 15);
+
+                html += `
+                    <div class="analysis-section">
+                        <div class="analysis-header" onclick="toggleSection('${key}')">
+                            <span class="analysis-title">${escapeHtml(data.label)}</span>
+                            <span class="analysis-count">${count}개</span>
+                        </div>
+                        <div class="analysis-content" id="section-${key}">
+                            <div class="sample-text">"${escapeHtml(sampleContent)}"</div>
+                            <div class="style-row">
+                                <span class="style-label">변환</span>
+                                <select class="style-input mapping-select" id="mapping-${key}" onchange="updateMapping('${key}', this.value)">
+                                    ${hwpxStyleTypes.map(opt =>
+                                        `<option value="${opt.value}" ${data.mappedTo === opt.value ? 'selected' : ''}>${opt.label}</option>`
+                                    ).join('')}
+                                </select>
+                            </div>
+                            <div id="style-options-${key}">
+                                ${renderStyleOptions(key, data.mappedTo)}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // HTML 이스케이프
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 마크다운 테이블 파싱 및 HTML 테이블 렌더링
+        function parseMarkdownTable(tableLines) {
+            if (!tableLines || tableLines.length < 2) return '';
+
+            const rows = tableLines.map(line => {
+                // 앞뒤 | 제거하고 셀 분리
+                return line.trim().replace(/^\||\|$/g, '').split('|').map(cell => cell.trim());
+            });
+
+            // 두 번째 줄이 구분선인지 확인 (--- 패턴)
+            const hasSeparator = rows.length >= 2 && rows[1].every(cell => /^[-:]+$/.test(cell));
+
+            let html = '<table class="preview-table">';
+
+            if (hasSeparator && rows.length >= 1) {
+                // 헤더가 있는 테이블
+                html += '<thead><tr>';
+                rows[0].forEach(cell => {
+                    html += `<th>${escapeHtml(cell)}</th>`;
+                });
+                html += '</tr></thead>';
+
+                // 바디 (구분선 이후)
+                html += '<tbody>';
+                for (let i = 2; i < rows.length; i++) {
+                    html += '<tr>';
+                    rows[i].forEach(cell => {
+                        html += `<td>${escapeHtml(cell)}</td>`;
+                    });
+                    html += '</tr>';
+                }
+                html += '</tbody>';
+            } else {
+                // 헤더 없는 테이블
+                html += '<tbody>';
+                rows.forEach(row => {
+                    html += '<tr>';
+                    row.forEach(cell => {
+                        html += `<td>${escapeHtml(cell)}</td>`;
+                    });
+                    html += '</tr>';
+                });
+                html += '</tbody>';
+            }
+
+            html += '</table>';
+            return html;
+        }
+
+        // 매핑 변경 처리
+        function updateMapping(key, mappedTo) {
+            if (currentAnalysis && currentAnalysis[key]) {
+                currentAnalysis[key].mappedTo = mappedTo;
+
+                // 스타일 옵션 다시 렌더링
+                const optionsContainer = document.getElementById(`style-options-${key}`);
+                if (optionsContainer) {
+                    optionsContainer.innerHTML = renderStyleOptions(key, mappedTo);
+                }
+
+                updatePreview();
+            }
+        }
+
+        // 스타일 옵션 렌더링 (매핑된 타입에 따라)
+        function renderStyleOptions(key, mappedTo) {
+            if (mappedTo === 'none' || mappedTo === 'table') {
+                return mappedTo === 'table' ? '<div class="help-text">표는 그대로 변환됩니다</div>' : '';
+            }
+
+            const styleKey = mappedTo; // title, subtitle, level1, level2, note
+            const style = currentStyles[styleKey] || currentStyles.level1;
+
+            // 각 타입별 옵션
+            const bulletOptions = getBulletOptions(mappedTo);
+
+            let html = `
+                <div class="style-row">
+                    <span class="style-label">글머리</span>
+                    <select class="style-input" onchange="updateStyleForMapping('${key}', '${mappedTo}', 'bullet', this.value)">
+                        ${bulletOptions.map(opt =>
+                            `<option value="${opt.value}" ${style.bullet === opt.value ? 'selected' : ''}>${opt.label}</option>`
+                        ).join('')}
+                    </select>
+                </div>
+                <div class="style-row">
+                    <span class="style-label">크기</span>
+                    <select class="style-input" onchange="updateStyleForMapping('${key}', '${mappedTo}', 'size', parseInt(this.value))">
+                        ${fontSizeOptions.map(size =>
+                            `<option value="${size}" ${style.size === size ? 'selected' : ''}>${size}pt</option>`
+                        ).join('')}
+                    </select>
+                </div>
+            `;
+
+            // 굵기 (title, subtitle, level1)
+            if (['title', 'subtitle', 'level1'].includes(mappedTo)) {
+                html += `
+                    <div class="style-row">
+                        <span class="style-label">굵기</span>
+                        <select class="style-input" onchange="updateStyleForMapping('${key}', '${mappedTo}', 'bold', this.value === 'true')">
+                            <option value="true" ${style.bold ? 'selected' : ''}>굵게</option>
+                            <option value="false" ${!style.bold ? 'selected' : ''}>보통</option>
+                        </select>
+                    </div>
+                `;
+            }
+
+            // 들여쓰기 (level1, level2)
+            if (['level1', 'level2'].includes(mappedTo)) {
+                html += `
+                    <div class="style-row">
+                        <span class="style-label">들여쓰기</span>
+                        <select class="style-input" onchange="updateStyleForMapping('${key}', '${mappedTo}', 'indent', parseInt(this.value))">
+                            <option value="0" ${style.indent === 0 ? 'selected' : ''}>없음</option>
+                            <option value="1" ${style.indent === 1 ? 'selected' : ''}>1칸</option>
+                            <option value="2" ${style.indent === 2 ? 'selected' : ''}>2칸</option>
+                            <option value="3" ${style.indent === 3 ? 'selected' : ''}>3칸</option>
+                            <option value="4" ${style.indent === 4 ? 'selected' : ''}>4칸</option>
+                        </select>
+                    </div>
+                `;
+            }
+
+            // 글꼴
+            html += `
+                <div class="style-row">
+                    <span class="style-label">글꼴</span>
+                    <select class="style-input" onchange="updateStyleForMapping('${key}', '${mappedTo}', 'font', this.value)">
+                        ${fontOptions.map(opt =>
+                            `<option value="${opt.value}" ${style.font === opt.value ? 'selected' : ''}>${opt.label}</option>`
+                        ).join('')}
+                    </select>
+                </div>
+            `;
+
+            return html;
+        }
+
+        // 글머리 옵션 가져오기
+        function getBulletOptions(mappedTo) {
+            switch(mappedTo) {
+                case 'title':
+                    return [
+                        { value: 'roman', label: 'Ⅰ. Ⅱ. Ⅲ. (로마숫자)' },
+                        { value: 'number', label: '1. 2. 3. (숫자)' },
+                        { value: 'none', label: '없음' }
+                    ];
+                case 'subtitle':
+                    return [
+                        { value: 'circled', label: '① ② ③ (동그라미)' },
+                        { value: 'number', label: '1) 2) 3)' },
+                        { value: 'korean', label: '가. 나. 다.' },
+                        { value: 'none', label: '없음' }
+                    ];
+                case 'level1':
+                    return [
+                        { value: '□', label: '□ (네모)' },
+                        { value: '■', label: '■ (채운네모)' },
+                        { value: '◇', label: '◇ (마름모)' },
+                        { value: '○', label: '○ (동그라미)' },
+                        { value: '-', label: '- (대시)' }
+                    ];
+                case 'level2':
+                    return [
+                        { value: 'ㅇ', label: 'ㅇ (이응)' },
+                        { value: '○', label: '○ (동그라미)' },
+                        { value: '·', label: '· (점)' },
+                        { value: '-', label: '- (대시)' }
+                    ];
+                case 'note':
+                    return [
+                        { value: '*', label: '* (별표)' },
+                        { value: '※', label: '※ (참고)' },
+                        { value: '→', label: '→ (화살표)' },
+                        { value: 'none', label: '없음' }
+                    ];
+                default:
+                    return [];
+            }
+        }
+
+        // 매핑된 스타일 업데이트
+        function updateStyleForMapping(key, mappedTo, property, value) {
+            // 해당 스타일 타입의 currentStyles 업데이트
+            if (currentStyles[mappedTo]) {
+                currentStyles[mappedTo][property] = value;
+            }
+
+            updatePreview();
+        }
+
+        function toggleSection(key) {
+            const section = document.getElementById(`section-${key}`);
+            section.style.display = section.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function updateStyle(key, property, value) {
+            currentStyles[key][property] = value;
+
+            // 프리뷰 텍스트 업데이트 (실제 입력된 내용 기반)
+            const previewEl = document.getElementById(`preview-${key}`);
+            if (previewEl && currentAnalysis) {
+                const firstItem = currentAnalysis[key] ? currentAnalysis[key][0] : null;
+                const sampleContent = firstItem ? truncateText(firstItem.content, 20) : '내용';
+                previewEl.textContent = getHwpxExample(key, sampleContent);
+            }
+
+            // 미리보기 업데이트
+            updatePreview();
+        }
+
+        function resetStyles() {
+            currentStyles = JSON.parse(JSON.stringify(defaultStyles));
+            const markdown = document.getElementById('markdown-input').value;
+            if (markdown.trim()) {
+                const analysis = analyzeMarkdown(markdown);
+                renderAnalysis(analysis);
+                updatePreview();
+            }
+            showToast('스타일이 초기화되었습니다', 'success');
+        }
+
+        // ========================================
+        // 미리보기 렌더링
+        // ========================================
+        function updatePreview() {
+            const markdown = document.getElementById('markdown-input').value;
+            const container = document.getElementById('preview-container');
+
+            if (!markdown.trim() || !currentAnalysis) {
+                container.innerHTML = '<div class="preview-empty">마크다운을 입력하면<br>변환 결과가 미리보기됩니다</div>';
+                return;
+            }
+
+            const lines = markdown.split('\n');
+            let html = '';
+
+            // 카운터들
+            const counters = { title: 0, subtitle: 0 };
+            const romanNumerals = ['Ⅰ', 'Ⅱ', 'Ⅲ', 'Ⅳ', 'Ⅴ', 'Ⅵ', 'Ⅶ', 'Ⅷ', 'Ⅸ', 'Ⅹ'];
+            const circledNumbers = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩'];
+            const koreanLetters = ['가', '나', '다', '라', '마', '바', '사', '아', '자', '차'];
+
+            // 테이블 라인 수집용
+            let tableLines = [];
+            let inTable = false;
+
+            // 테이블 렌더링 함수
+            const flushTable = () => {
+                if (tableLines.length > 0) {
+                    // 테이블 매핑 확인
+                    const tableMapping = currentAnalysis.table ? currentAnalysis.table.mappedTo : 'table';
+                    if (tableMapping === 'table') {
+                        html += parseMarkdownTable(tableLines);
+                    } else if (tableMapping !== 'none') {
+                        // 테이블이지만 다른 형식으로 변환
+                        tableLines.forEach(tl => {
+                            html += `<div style="margin-bottom: 0.3rem;">${escapeHtml(tl)}</div>`;
+                        });
+                    }
+                    tableLines = [];
+                }
+                inTable = false;
+            };
+
+            // 각 라인에 대해 처리
+            lines.forEach((line, lineIndex) => {
+                const trimmed = line.trim();
+
+                // 빈 줄 처리
+                if (!trimmed) {
+                    flushTable();
+                    return;
+                }
+
+                // 이 라인이 어떤 분석 키에 해당하는지 찾기
+                let matchedKey = null;
+                let content = trimmed;
+
+                for (const [key, data] of Object.entries(currentAnalysis)) {
+                    if (data.items.some(item => item.line === lineIndex + 1)) {
+                        matchedKey = key;
+                        // content 추출
+                        if (key.startsWith('h')) {
+                            const level = parseInt(key.substring(1));
+                            content = trimmed.replace(new RegExp(`^#{${level}}\\s+`), '');
+                        } else if (key.startsWith('list_')) {
+                            content = trimmed.replace(/^[-*+]\s+/, '');
+                        } else if (key === 'quote') {
+                            content = trimmed.replace(/^>\s*/, '');
+                        } else if (key === 'table') {
+                            content = trimmed;
+                        }
+                        break;
+                    }
+                }
+
+                // 테이블 라인 처리
+                if (matchedKey === 'table') {
+                    inTable = true;
+                    tableLines.push(trimmed);
+                    return;
+                } else {
+                    flushTable();
+                }
+
+                if (!matchedKey) {
+                    // 매칭 안됨 - 일반 텍스트
+                    html += `<div style="margin-bottom: 0.3rem;">${escapeHtml(trimmed)}</div>`;
+                    return;
+                }
+
+                const mappedTo = currentAnalysis[matchedKey].mappedTo;
+                if (mappedTo === 'none') {
+                    html += `<div style="margin-bottom: 0.3rem;">${escapeHtml(trimmed)}</div>`;
+                    return;
+                }
+
+                const style = currentStyles[mappedTo];
+                if (!style) {
+                    html += `<div style="margin-bottom: 0.3rem;">${escapeHtml(content)}</div>`;
+                    return;
+                }
+
+                // 스타일 적용
+                let bullet = '';
+                let indent = '';
+                const boldStyle = style.bold ? 'font-weight: bold;' : '';
+
+                if (mappedTo === 'title') {
+                    if (style.bullet === 'roman') {
+                        bullet = romanNumerals[counters.title % 10] + '. ';
+                    } else if (style.bullet === 'number') {
+                        bullet = (counters.title + 1) + '. ';
+                    }
+                    counters.title++;
+                    counters.subtitle = 0; // 리셋
+                } else if (mappedTo === 'subtitle') {
+                    if (style.bullet === 'circled') {
+                        bullet = circledNumbers[counters.subtitle % 10] + ' ';
+                    } else if (style.bullet === 'number') {
+                        bullet = (counters.subtitle + 1) + ') ';
+                    } else if (style.bullet === 'korean') {
+                        bullet = koreanLetters[counters.subtitle % 10] + '. ';
+                    }
+                    counters.subtitle++;
+                } else if (mappedTo === 'level1' || mappedTo === 'level2') {
+                    indent = '&nbsp;'.repeat(style.indent || 0);
+                    bullet = style.bullet + ' ';
+                } else if (mappedTo === 'note') {
+                    if (style.bullet !== 'none') {
+                        bullet = style.bullet + ' ';
+                    }
+                }
+
+                const cssClass = mappedTo === 'title' ? 'preview-title h1' :
+                                mappedTo === 'subtitle' ? 'preview-title h2' :
+                                mappedTo === 'note' ? 'preview-note' :
+                                `preview-item ${mappedTo}`;
+
+                html += `<div class="${cssClass}" style="font-size: ${style.size}pt; ${boldStyle}">${indent}${bullet}${escapeHtml(content)}</div>`;
+            });
+
+            // 남은 테이블 처리
+            flushTable();
+
+            container.innerHTML = html || '<div class="preview-empty">인식된 마크다운 형식이 없습니다</div>';
+        }
+
+        // ========================================
+        // 입력 처리
+        // ========================================
+        const markdownInput = document.getElementById('markdown-input');
+
+        markdownInput.addEventListener('input', debounce(function() {
+            const markdown = this.value;
+
+            // 글자수/줄수 업데이트
+            document.getElementById('char-count').textContent = markdown.length + '자';
+            document.getElementById('line-count').textContent = (markdown.match(/\n/g) || []).length + 1 + '줄';
+
+            // 분석 및 미리보기 업데이트
+            const analysis = analyzeMarkdown(markdown);
+            renderAnalysis(analysis);
+            updatePreview();
+        }, 300));
+
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func.apply(this, args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        function clearInput() {
+            const markdown = markdownInput.value;
+            if (markdown && !confirm('입력 내용을 모두 지우시겠습니까?')) return;
+            markdownInput.value = '';
+            document.getElementById('char-count').textContent = '0자';
+            document.getElementById('line-count').textContent = '0줄';
+            document.getElementById('analysis-container').innerHTML = '<div class="no-analysis">왼쪽에 마크다운을 입력하면<br>자동으로 분석됩니다</div>';
+            document.getElementById('preview-container').innerHTML = '<div class="preview-empty">마크다운을 입력하면<br>변환 결과가 미리보기됩니다</div>';
+        }
+
+        // ========================================
+        // HWPX 변환
+        // ========================================
+        async function convertToHwpx() {
+            const markdown = markdownInput.value.trim();
+
+            if (!markdown) {
+                showToast('변환할 내용을 입력해 주세요.', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('convert-btn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span class="loading"></span> 변환 중...';
+            btn.disabled = true;
+
+            try {
+                // 스타일 설정을 API 형식으로 변환
+                const styleSettings = {
+                    title: {
+                        bullet: currentStyles.title.bullet,
+                        size: currentStyles.title.size,
+                        bold: currentStyles.title.bold,
+                        font: currentStyles.title.font
+                    },
+                    subtitle: {
+                        bullet: currentStyles.subtitle.bullet,
+                        size: currentStyles.subtitle.size,
+                        bold: currentStyles.subtitle.bold,
+                        font: currentStyles.subtitle.font
+                    },
+                    level1: {
+                        bullet: currentStyles.level1.bullet,
+                        size: currentStyles.level1.size,
+                        bold: currentStyles.level1.bold,
+                        indent: currentStyles.level1.indent,
+                        font: currentStyles.level1.font
+                    },
+                    level2: {
+                        bullet: currentStyles.level2.bullet,
+                        size: currentStyles.level2.size,
+                        indent: currentStyles.level2.indent,
+                        font: currentStyles.level2.font
+                    },
+                    note: {
+                        bullet: currentStyles.note.bullet,
+                        size: currentStyles.note.size,
+                        font: currentStyles.note.font
+                    }
+                };
+
+                // 매핑 정보 추출 (어떤 마크다운 요소가 어떤 HWPX 스타일로 변환되는지)
+                const mappings = {};
+                if (currentAnalysis) {
+                    for (const [key, data] of Object.entries(currentAnalysis)) {
+                        mappings[key] = data.mappedTo;
+                    }
+                }
+                styleSettings.mappings = mappings;
+
+                const formData = new FormData();
+                formData.append('markdown', markdown);
+                formData.append('filename', 'report');
+                formData.append('preprocess', 'true');
+                formData.append('style_settings', JSON.stringify(styleSettings));
+
+                const response = await fetch('/v1/conversions', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || error.message || '변환 실패');
+                }
+
+                const result = await response.json();
+                const downloadUrl = `/v1/conversions/${result.conversion_id}/download`;
+                const a = document.createElement('a');
+                a.href = downloadUrl;
+                a.download = 'report.hwpx';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+
+                showToast('HWPX 파일이 다운로드됩니다!', 'success');
+
+            } catch (error) {
+                showToast('변환 실패: ' + error.message, 'error');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        // ========================================
+        // 토스트 알림
+        // ========================================
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast ' + type + ' show';
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        // ========================================
+        // ChatGPT 프롬프트 모달
+        // ========================================
+        const PROMPT_TEMPLATE = `[역할]
+당신은 공공기관 정책기획 담당자입니다. 상급자(부서장/기관장)에게 보고하기 위한 업무 보고서를 작성합니다.
+
+[보고서 목적]
+- 의사결정 지원을 위한 상급 보고용 문서
+- 정책 검토 및 추진 방향 제시
+
+[작성 원칙]
+1. 근거 중심 작성: 추정·의견 표현 금지
+   - "일반적으로", "가능성이 있다", "~로 보인다" 등의 표현 사용 금지
+   - 구체적인 수치, 일정, 근거를 포함하여 작성
+2. 개조식(글머리 기호) 형태로 작성
+3. 간결하고 명확한 문장 사용
+4. 설명 문장, 인사말, 부연 설명 없이 보고서 본문만 출력
+
+[Markdown 구조 규칙]
+- 대제목: # (1개)
+- 중제목: ## (2개)
+- 1단계 항목: - (대시)
+- 2단계 항목: 2칸 들여쓰기 후 - (대시)
+- 주석/참고: > (인용)
+- 강조: **굵게**
+
+[보고서 주제]
+{topic}
+
+위 주제에 대해 공공기관 보고서 형식의 Markdown을 작성해 주세요.`;
+
+        function showPromptModal() {
+            document.getElementById('prompt-modal').classList.add('show');
+            document.getElementById('topic-input').focus();
+            updatePrompt();
+        }
+
+        function closePromptModal(event) {
+            if (!event || event.target.id === 'prompt-modal') {
+                document.getElementById('prompt-modal').classList.remove('show');
+            }
+        }
+
+        function updatePrompt() {
+            const topic = document.getElementById('topic-input').value || '(주제를 입력하세요)';
+            const prompt = PROMPT_TEMPLATE.replace('{topic}', topic);
+            document.getElementById('prompt-content').textContent = prompt;
+        }
+
+        async function copyPrompt() {
+            const promptContent = document.getElementById('prompt-content').textContent;
+            try {
+                await navigator.clipboard.writeText(promptContent);
+                showToast('프롬프트가 복사되었습니다! ChatGPT에 붙여넣기 하세요.', 'success');
+                closePromptModal();
+            } catch (err) {
+                const textarea = document.createElement('textarea');
+                textarea.value = promptContent;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                showToast('프롬프트가 복사되었습니다!', 'success');
+                closePromptModal();
+            }
+        }
+
+        // ESC 키로 모달 닫기
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closePromptModal();
+            }
+        });
+
+        // 페이지 로드 시 기본 스타일 설정 표시
+        document.addEventListener('DOMContentLoaded', () => {
+            renderAnalysis({});
+        });
+    </script>
+</body>
+</html>

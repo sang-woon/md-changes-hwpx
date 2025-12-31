@@ -6,7 +6,8 @@
 
 - **공공기관 표준 서식**: Ⅰ.→①→□→ㅇ 형태의 계층 구조 자동 적용
 - **레벨별 폰트 크기**: 대제목(18pt), 중제목(15pt), 1단계(13pt), 2단계(12pt)
-- **참조 템플릿 지원**: 기존 HWPX 파일의 스타일을 상속
+- **웹 UI 편집기**: Markdown 실시간 미리보기 및 HWPX 변환
+- **ChatGPT 프롬프트**: AI가 Markdown으로만 응답하도록 하는 프롬프트 제공
 - **REST API 서비스**: FastAPI 기반 웹 서비스
 - **파일 자동 삭제**: 24시간 후 자동 정리 (보안)
 
@@ -26,7 +27,22 @@ pip install -e .
 
 ## 사용 방법
 
-### 1. Python 코드
+### 1. 웹 UI (권장)
+
+```bash
+# 서버 시작
+hwpx-server
+
+# 웹 브라우저에서 접속
+# http://localhost:8000
+```
+
+**워크플로우:**
+1. 주제 입력 → **ChatGPT 프롬프트** 생성 및 복사
+2. ChatGPT에서 문서 생성 → 결과를 **편집기에 붙여넣기**
+3. 미리보기 확인 → **HWPX 변환** 버튼 클릭
+
+### 2. Python 코드
 
 ```python
 from hwpx_converter import HwpxConverter
@@ -38,7 +54,7 @@ converter = HwpxConverter()
 converter.convert('report.md', 'report.hwpx')
 ```
 
-### 2. 명령행 도구
+### 3. 명령행 도구
 
 ```bash
 # 기본 변환
@@ -51,15 +67,9 @@ hwpx-convert report.md -o report.hwpx --template custom.hwpx
 hwpx-convert --guide
 ```
 
-### 3. REST API 서버
+### 4. REST API
 
 ```bash
-# 서버 시작
-hwpx-server
-
-# 또는
-uvicorn hwpx_converter.api:app --host 0.0.0.0 --port 8000
-
 # API 문서: http://localhost:8000/docs
 ```
 
@@ -99,45 +109,29 @@ uvicorn hwpx_converter.api:app --host 0.0.0.0 --port 8000
 * '25년 7월부터 만 5세 무상교육·보육 실시
 ```
 
+## ChatGPT 프롬프트 사용법
+
+웹 UI에서 **ChatGPT 프롬프트** 버튼을 클릭하거나, API를 통해 프롬프트를 받을 수 있습니다:
+
+```bash
+# 프롬프트 조회
+curl "http://localhost:8000/v1/prompt?topic=2025년 디지털 전환 계획"
+```
+
+AI가 **Markdown 코드블록**으로만 응답하여, 복사-붙여넣기 시 서식이 유지됩니다.
+
 ## API 엔드포인트
 
 | 메서드 | 경로 | 설명 |
 |--------|------|------|
+| GET | `/` | 웹 UI |
 | POST | `/v1/conversions` | 변환 요청 |
 | GET | `/v1/conversions/{id}` | 상태 조회 |
 | GET | `/v1/conversions/{id}/download` | 결과 다운로드 |
+| GET/POST | `/v1/prompt` | ChatGPT 프롬프트 |
 | GET | `/v1/templates` | 템플릿 목록 |
 | POST | `/v1/templates` | 템플릿 업로드 |
 | GET | `/healthz` | 헬스체크 |
-
-### API 사용 예시
-
-```python
-import requests
-
-# 1. 변환 요청
-response = requests.post(
-    'http://localhost:8000/v1/conversions',
-    data={
-        'markdown': '# 제목\n\n- 항목 1\n    - 세부 항목',
-        'filename': 'report'
-    }
-)
-result = response.json()
-conversion_id = result['conversion_id']
-
-# 2. 상태 확인
-status = requests.get(f'http://localhost:8000/v1/conversions/{conversion_id}')
-print(status.json())
-
-# 3. 파일 다운로드
-if status.json()['output_ready']:
-    file_response = requests.get(
-        f'http://localhost:8000/v1/conversions/{conversion_id}/download'
-    )
-    with open('report.hwpx', 'wb') as f:
-        f.write(file_response.content)
-```
 
 ## 프로젝트 구조
 
@@ -151,12 +145,12 @@ hwpx-converter/
 │       ├── cli.py           # 명령행 도구
 │       ├── models.py        # 데이터 모델
 │       ├── errors.py        # 에러 처리
-│       └── storage.py       # 파일 저장소
+│       ├── storage.py       # 파일 저장소
+│       └── static/          # 웹 UI
+│           └── index.html
 ├── data/
 │   ├── templates/           # HWPX 템플릿
 │   └── jobs/                # 변환 작업 디렉토리
-├── tests/                   # 테스트
-├── docs/                    # 문서 (참조용 원본 코드)
 ├── pyproject.toml           # 패키지 설정
 └── README.md
 ```

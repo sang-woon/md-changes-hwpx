@@ -1,0 +1,325 @@
+/**
+ * WYSIWYG Editor Styles
+ */
+
+/* 2-Panel Layout */
+.two-panel-layout {
+    display: flex;
+    gap: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+.style-panel {
+    width: 320px;
+    flex-shrink: 0;
+}
+
+.editor-panel {
+    flex: 1;
+    min-width: 0;
+}
+
+/* Style Settings Card */
+.style-settings {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1.5rem;
+    position: sticky;
+    top: 1rem;
+}
+
+.style-settings h3 {
+    margin: 0 0 1rem;
+    color: #2d3748;
+    font-size: 1.1rem;
+    border-bottom: 2px solid #3182ce;
+    padding-bottom: 0.5rem;
+}
+
+/* Editor Container */
+.editor-container {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.editor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: #f7fafc;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.editor-header h3 {
+    margin: 0;
+    color: #2d3748;
+    font-size: 1rem;
+}
+
+.editor-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.editor-actions button {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-secondary {
+    background: #edf2f7;
+    border: 1px solid #cbd5e0;
+    color: #4a5568;
+}
+
+.btn-secondary:hover {
+    background: #e2e8f0;
+}
+
+.btn-primary {
+    background: #3182ce;
+    border: 1px solid #2b6cb0;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #2b6cb0;
+}
+
+/* WYSIWYG Editor */
+.wysiwyg-editor {
+    min-height: 500px;
+    padding: 1.5rem;
+    outline: none;
+    font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+    line-height: 1.8;
+    background: white;
+}
+
+.wysiwyg-editor:focus {
+    box-shadow: inset 0 0 0 2px rgba(66, 153, 225, 0.3);
+}
+
+/* Placeholder */
+.wysiwyg-editor[data-empty="true"]::before {
+    content: "ChatGPT에서 복사한 마크다운을 여기에 붙여넣으세요...";
+    color: #a0aec0;
+    pointer-events: none;
+}
+
+.wysiwyg-editor.focused[data-empty="true"]::before {
+    content: "";
+}
+
+/* Space Indicator */
+.space-indicator {
+    color: #cbd5e0;
+    margin-right: 0.3em;
+    font-size: 0.9em;
+}
+
+/* Empty Line */
+.empty-line {
+    height: 1.5em;
+}
+
+/* Typography in Editor */
+.wysiwyg-editor .title {
+    font-size: 18pt;
+    font-weight: bold;
+    color: #1a365d;
+    border-bottom: 2px solid #3182ce;
+    padding-bottom: 0.3em;
+    margin: 1em 0 0.5em;
+}
+
+.wysiwyg-editor .subtitle {
+    font-size: 15pt;
+    font-weight: bold;
+    color: #2c5282;
+    margin: 0.8em 0 0.4em;
+}
+
+.wysiwyg-editor .level1 {
+    font-size: 15pt;
+    margin: 0.3em 0;
+    padding-left: 0.5em;
+}
+
+.wysiwyg-editor .level2 {
+    font-size: 12pt;
+    margin: 0.2em 0;
+    padding-left: 2em;
+}
+
+.wysiwyg-editor .note {
+    font-size: 10pt;
+    color: #718096;
+    border-left: 3px solid #cbd5e0;
+    padding-left: 1em;
+    margin: 0.3em 0;
+}
+
+.wysiwyg-editor .paragraph {
+    margin: 0.3em 0;
+}
+
+/* Mapping Table */
+.mapping-table {
+    width: 100%;
+    margin-top: 1rem;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+
+.mapping-table th,
+.mapping-table td {
+    padding: 0.5rem;
+    text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.mapping-table th {
+    background: #f7fafc;
+    font-weight: 600;
+    color: #4a5568;
+}
+
+.mapping-table code {
+    background: #edf2f7;
+    padding: 0.1rem 0.3rem;
+    border-radius: 3px;
+    font-size: 0.85em;
+}
+
+/* Style Setting Rows */
+.style-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    padding: 0.5rem;
+    background: #f7fafc;
+    border-radius: 4px;
+}
+
+.style-row label {
+    flex: 0 0 60px;
+    font-weight: 500;
+    font-size: 0.9rem;
+    color: #4a5568;
+}
+
+.style-row select,
+.style-row input[type="number"] {
+    padding: 0.3rem 0.5rem;
+    border: 1px solid #cbd5e0;
+    border-radius: 4px;
+    font-size: 0.85rem;
+}
+
+.style-row select {
+    flex: 1;
+}
+
+.style-row input[type="number"] {
+    width: 50px;
+}
+
+.style-row input[type="checkbox"] {
+    margin-left: 0.5rem;
+}
+
+/* Topic Form */
+.topic-form {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: #f0f9ff;
+    border: 1px solid #90cdf4;
+    border-radius: 8px;
+}
+
+.topic-form label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #2c5282;
+}
+
+.topic-form .input-group {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.topic-form input[type="text"] {
+    flex: 1;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #90cdf4;
+    border-radius: 4px;
+    font-size: 0.95rem;
+}
+
+.topic-form button {
+    padding: 0.5rem 1rem;
+    background: #3182ce;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.topic-form button:hover {
+    background: #2b6cb0;
+}
+
+/* Loading State */
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #e2e8f0;
+    border-top-color: #3182ce;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .two-panel-layout {
+        flex-direction: column;
+    }
+
+    .style-panel {
+        width: 100%;
+    }
+
+    .style-settings {
+        position: static;
+    }
+}
